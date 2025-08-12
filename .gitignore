@@ -29,3 +29,9 @@ Dockerfile.cross
 dist/
 output/
 /.project
+
+# mac os files
+.DS_Store
+.AppleDouble
+.LSOverride
+
