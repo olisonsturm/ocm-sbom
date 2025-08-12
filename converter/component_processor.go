@@ -43,25 +43,26 @@ func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor) (s
 	}
 
 	// Generate the root OCM component SBOM that references all resource SBOMs
-	rootSBOMGenerator := NewRootSBOMGenerator(p.cliConverter)
-	rootSBOMPath, err := rootSBOMGenerator.GenerateRootSBOM(descriptor, individualSBOMPaths, individualSBOMsDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate root SBOM for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
-	}
+	// rootSBOMGenerator := NewRootSBOMGenerator(p.cliConverter)
+	// rootSBOMPath, err := rootSBOMGenerator.GenerateRootSBOM(descriptor, individualSBOMPaths, individualSBOMsDir)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to generate root SBOM for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
+	// }
 
 	// Prepare all SBOM paths for merging (root SBOM first, then resource SBOMs)
 	// IMPORTANT: Root OCM meta SBOM must be first in the list!
-	allSBOMPaths := []string{rootSBOMPath}
-	allSBOMPaths = append(allSBOMPaths, individualSBOMPaths...)
+	// allSBOMPaths := []string{rootSBOMPath}
+	// allSBOMPaths = append(allSBOMPaths, individualSBOMPaths...)
+	allSBOMPaths := individualSBOMPaths
 
-	log.Printf("Merging SBOMs in order: root SBOM first, then %d resource SBOMs", len(individualSBOMPaths))
+	log.Printf("Merging the following %d SBOMs", len(individualSBOMPaths))
 	for i, path := range allSBOMPaths {
 		log.Printf("  %d: %s", i+1, path)
 	}
 
 	// Merge the SBOMs using the Merger, saving in the same individualSBOMsDir
 	merger := NewMerger(p.cliConverter)
-	mergedSBOMPath, err := merger.Merge(individualSBOMsDir, allSBOMPaths, "cyclonedx-cli", descriptor.Component.Name)
+	mergedSBOMPath, err := merger.Merge(individualSBOMsDir, allSBOMPaths, "cyclonedx-cli", descriptor.Component.Name, descriptor.Component.Version)
 	if err != nil {
 		return "", fmt.Errorf("failed to merge SBOMs for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
 	}

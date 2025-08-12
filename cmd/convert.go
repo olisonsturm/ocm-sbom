@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Flags für den convert Befehl
+// Global variables for flags
 var (
 	formatStr       string
 	outputFilePath  string
@@ -20,7 +20,7 @@ var (
 	componentName   string
 )
 
-// convertCmd repräsentiert den 'convert' Befehl
+// convertCmd represents the convert command
 var convertCmd = &cobra.Command{
 	Use:   "convert [CTF_PATH]//[COMPONENT_NAME]",
 	Short: "Converts OCM component descriptor to SBOM (CycloneDX/SPDX)",
@@ -45,7 +45,7 @@ Example:
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// --- Validierung und Setup ---
+		// Validate required flags and arguments
 		if ctfPath == "" || componentName == "" {
 			return fmt.Errorf("CTF path and component name are required")
 		}
@@ -56,7 +56,7 @@ Example:
 			return fmt.Errorf("--output or -o flag is required to specify the output file path")
 		}
 
-		// Liste der gewünschten Ausgabeformate
+		// List of supported formats
 		targetFormats := strings.Split(formatStr, ",")
 		var parsedFormats []converter.SBOMFormat
 		for _, f := range targetFormats {
@@ -86,10 +86,9 @@ Example:
 		log.Printf("Output path: %s\n", outputFilePath)
 		log.Printf("Merge tool: %s", mergeToolChoice)
 
-		// --- Merging und Konvertierung für jedes Zielformat ---
+		// convert
 		for _, format := range parsedFormats {
 			currentOutputFilePath := outputFilePath
-			// Füge Dateiendung hinzu, wenn mehrere Formate angefordert werden
 			if len(parsedFormats) > 1 {
 				ext := ""
 				switch format {
@@ -107,7 +106,6 @@ Example:
 
 			log.Printf("Generating SBOM for format: %s to %s\n", format, currentOutputFilePath)
 
-			// Korrigierter Aufruf mit den neuen Variablen
 			sbomContent, err := conv.ConvertOCMToSBOM(
 				ctfPath,
 				componentName,
@@ -118,7 +116,7 @@ Example:
 				return fmt.Errorf("error processing SBOM for format %s: %w", format, err)
 			}
 
-			// Ergebnis in Datei schreiben
+			// Write result in a file
 			err = ioutil.WriteFile(currentOutputFilePath, sbomContent, 0644)
 			if err != nil {
 				return fmt.Errorf("failed to write SBOM to %s: %w", currentOutputFilePath, err)
@@ -134,14 +132,14 @@ Example:
 func init() {
 	rootCmd.AddCommand(convertCmd)
 
-	// Flags definieren
-	convertCmd.Flags().StringVarP(&formatStr, "format", "f", "", "Target SBOM formats (e.g., 'cyclonedx-json,spdx-json,cyclonedx-yaml,spdx-yaml')")
-	convertCmd.Flags().StringVarP(&outputFilePath, "output", "o", "output-sbom", "Output file path for the merged/converted SBOM (e.g., 'my-app.cdx.json'). Extension added if multiple formats.")
+	// Defined Flags
+	convertCmd.Flags().StringVarP(&formatStr, "format", "f", "cyclonedx-json", "Target SBOM formats (e.g., 'cyclonedx-json,spdx-json,cyclonedx-yaml,spdx-yaml')")
+	convertCmd.Flags().StringVarP(&outputFilePath, "output", "o", "output-sbom", "Output file path for the merged/converted SBOM (e.g., 'sbom.cdx.json').")
 
-	// Tools zur Auswahl
-	convertCmd.Flags().StringVar(&mergeToolChoice, "merge-tool", "cyclonedx-cli", "Tool to use for merging SBOMs ('cyclonedx-cli' or 'hoppr')")
+	// Tools to choose from
+	convertCmd.Flags().StringVarP(&mergeToolChoice, "merge-tool", "mt", "native", "Tool to use for merging SBOMs ('native','cyclonedx-cli','hoppr')")
 
-	// Markiere --format als zwingend erforderlich
-	convertCmd.MarkFlagRequired("format")
-	convertCmd.MarkFlagRequired("output")
+	// Mandatory Flags
+	// convertCmd.MarkFlagRequired("format")
+	// convertCmd.MarkFlagRequired("output")
 }

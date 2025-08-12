@@ -37,7 +37,7 @@ func (c *CLIConverter) ConvertOCMToSBOM(cftPath string, componentName string, ta
 		log.Printf("Merging %d component SBOMs into final SBOM", len(allComponentSBOMPaths))
 		merger := NewMerger(c)
 		// For a final merge of multiple components, use a generic name
-		finalMergedSBOMPath, err = merger.Merge(c.TempDir, allComponentSBOMPaths, mergeTool, "final-merged-components")
+		finalMergedSBOMPath, err = merger.Merge(c.TempDir, allComponentSBOMPaths, mergeTool, "final-merged-components", "1.0.0")
 		if err != nil {
 			return nil, fmt.Errorf("error during final merge: %w", err)
 		}
