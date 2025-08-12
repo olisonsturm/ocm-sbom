@@ -106,11 +106,11 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 		// Merge metadata tools - only if tools exist and result metadata is not nil
 		if result.Metadata != nil && bom.Metadata.Tools != nil {
 			// Handle Tools list (legacy)
-			if bom.Metadata.Tools.Tools != nil && len(*bom.Metadata.Tools.Tools) > 0 {
-				if result.Metadata.Tools.Tools == nil {
-					result.Metadata.Tools.Tools = &[]cyclonedx.Tool{}
+			if bom.Metadata.Tools.Components != nil && len(*bom.Metadata.Tools.Components) > 0 {
+				if result.Metadata.Tools.Components == nil {
+					result.Metadata.Tools.Components = &[]cyclonedx.Component{}
 				}
-				*result.Metadata.Tools.Tools = append(*result.Metadata.Tools.Tools, *bom.Metadata.Tools.Tools...)
+				*result.Metadata.Tools.Components = append(*result.Metadata.Tools.Components, *bom.Metadata.Tools.Components...)
 			}
 
 			// Handle Tools Components
@@ -300,8 +300,8 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 	}
 
 	// Cleanup empty top level elements
-	if result.Metadata != nil && result.Metadata.Tools != nil && result.Metadata.Tools.Tools != nil && len(*result.Metadata.Tools.Tools) == 0 {
-		result.Metadata.Tools.Tools = nil
+	if result.Metadata != nil && result.Metadata.Tools != nil && result.Metadata.Tools.Components != nil && len(*result.Metadata.Tools.Components) == 0 {
+		result.Metadata.Tools.Components = nil
 	}
 	if len(*result.Components) == 0 {
 		result.Components = nil

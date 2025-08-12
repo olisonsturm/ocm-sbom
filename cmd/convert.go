@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -117,7 +117,7 @@ Example:
 			}
 
 			// Write result in a file
-			err = ioutil.WriteFile(currentOutputFilePath, sbomContent, 0644)
+			err = os.WriteFile(currentOutputFilePath, sbomContent, 0644)
 			if err != nil {
 				return fmt.Errorf("failed to write SBOM to %s: %w", currentOutputFilePath, err)
 			}
