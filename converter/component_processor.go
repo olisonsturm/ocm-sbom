@@ -1,12 +1,14 @@
 package converter
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/anchore/clio"
 	"ocm.software/open-component-model/bindings/go/descriptor/runtime"
 )
 
@@ -22,7 +24,7 @@ func NewComponentProcessor(cliConverter *CLIConverter) *ComponentProcessor {
 
 // ProcessComponent generates and merges SBOMs for a given component version.
 // It returns the path to the merged SBOM (CycloneDX JSON).
-func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor) (string, error) {
+func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor, outputFormat SBOMFormat) (string, error) {
 	log.Printf("Processing component: %s:%s", descriptor.Component.Name, descriptor.Component.Version)
 
 	// temporary directory for individual SBOMs for this component
@@ -32,7 +34,7 @@ func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor) (s
 		return "", fmt.Errorf("failed creating temp directory for individual SBOMs: %w", err)
 	}
 
-	individualSBOMPaths, err := p.generateIndividualSBOMs(descriptor, individualSBOMsDir)
+	individualSBOMPaths, err := p.generateIndividualSBOMs(descriptor, individualSBOMsDir, outputFormat)
 	if err != nil {
 		return "", err
 	}
@@ -71,7 +73,7 @@ func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor) (s
 }
 
 // generateIndividualSBOMs generates SBOMs for each relevant resource in a component.
-func (p *ComponentProcessor) generateIndividualSBOMs(descriptor *runtime.Descriptor, individualSBOMsDir string) ([]string, error) {
+func (p *ComponentProcessor) generateIndividualSBOMs(descriptor *runtime.Descriptor, individualSBOMsDir string, outputFormat SBOMFormat) ([]string, error) {
 	var individualSBOMPaths []string
 	for _, res := range descriptor.Component.Resources {
 		var accessMap map[string]interface{}
@@ -94,21 +96,35 @@ func (p *ComponentProcessor) generateIndividualSBOMs(descriptor *runtime.Descrip
 		if imageRef, ok := accessMap["imageReference"].(string); ok && res.Type == "ociImage" {
 			log.Printf("Generating SBOM with Syft for OCI Image resource: %s", imageRef)
 
-			sbomData, genErr := p.cliConverter.generateSBOMWithSyft(imageRef, "cyclonedx-json")
-			if genErr != nil {
-				log.Printf("Error generating SBOM for image %s: %v", imageRef, genErr)
-				continue
-			}
+			// Set desired output format (single)
+			format := []string{string(outputFormat)}
+			// Create a temporary file for the SBOM
 			safeImageRef := sanitizeFilename(imageRef)
 			safeResName := sanitizeFilename(res.Name)
 			tempFilename := fmt.Sprintf("%s-%s-sbom.json", safeImageRef, safeResName)
 			tempSBOMPath := filepath.Join(individualSBOMsDir, tempFilename)
-			if writeErr := os.WriteFile(tempSBOMPath, []byte(sbomData), 0644); writeErr != nil {
-				log.Printf("Warning: could not save individual SBOM to %s: %v", tempSBOMPath, writeErr)
-				continue
+
+			// Create syft scanner with custom config
+			config := DefaultScanConfig()
+			id := clio.Identification{
+				Name:    "ocm-syft-scanner",
+				Version: "1.0.0-dev",
 			}
-			individualSBOMPaths = append(individualSBOMPaths, tempSBOMPath)
+			// set desired output format (single)
+			config.OutputFormats = format
+			s := NewScanner(config, id)
+
+			// Save the SBOM to a temporary file
+			s.SetOutputFile(tempSBOMPath)
+
+			// Scan and write to the custom file path
+			if err := s.ScanToWriter(context.Background(), imageRef); err != nil {
+				return nil, fmt.Errorf("failed to generate SBOM for resource %s (%s): %w", res.Name, imageRef, err)
+			}
+
 			log.Printf("SBOM generated and saved for resource %s at %s", imageRef, tempSBOMPath)
+
+			individualSBOMPaths = append(individualSBOMPaths, tempSBOMPath)
 		}
 	}
 	return individualSBOMPaths, nil

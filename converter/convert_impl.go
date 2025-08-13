@@ -21,7 +21,7 @@ func (c *CLIConverter) ConvertOCMToSBOM(cftPath string, componentName string, ta
 	}
 
 	// Step 1: process all components recursively starting at the given component (use version 1.0.0 for now)
-	allComponentSBOMPaths, err := c.processAllComponents(repo, componentName, "1.0.0")
+	allComponentSBOMPaths, err := c.processAllComponents(repo, componentName, "1.0.0", targetFormat)
 	if err != nil {
 		return nil, fmt.Errorf("error processing components: %w", err)
 	}
@@ -51,7 +51,7 @@ func (c *CLIConverter) ConvertOCMToSBOM(cftPath string, componentName string, ta
 }
 
 // processAllComponents traverses the component hierarchy and generates a merged SBOM for each component.
-func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository, componentName, componentVersion string) ([]string, error) {
+func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository, componentName, componentVersion string, outputFormat SBOMFormat) ([]string, error) {
 	var allComponentSBOMPaths []string
 	processed := make(map[string]bool)
 	queue := []struct{ ComponentName, Version string }{{ComponentName: componentName, Version: componentVersion}}
@@ -76,7 +76,7 @@ func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository,
 		}
 
 		// Process the current component using the runtime descriptor
-		mergedSBOMPath, err := processor.ProcessComponent(runtimeDesc)
+		mergedSBOMPath, err := processor.ProcessComponent(runtimeDesc, outputFormat)
 		if err != nil {
 			log.Printf("Warning: error processing component %s: %v", id, err)
 		}

@@ -109,7 +109,7 @@ Example:
 			sbomContent, err := conv.ConvertOCMToSBOM(
 				ctfPath,
 				componentName,
-				format,
+				parsedFormats[0],
 				mergeToolChoice,
 			)
 			if err != nil {
@@ -133,7 +133,7 @@ func init() {
 	rootCmd.AddCommand(convertCmd)
 
 	// Defined Flags
-	convertCmd.Flags().StringVarP(&formatStr, "format", "f", "cyclonedx-json", "Target SBOM formats (e.g., 'cyclonedx-json,spdx-json,cyclonedx-yaml,spdx-yaml')")
+	convertCmd.Flags().StringVarP(&formatStr, "format", "f", "cyclonedx-json", "Target SBOM formats (e.g., 'cyclonedx-json','spdx-json','cyclonedx-yaml','spdx-yaml')")
 	convertCmd.Flags().StringVarP(&outputFilePath, "output", "o", "output-sbom", "Output file path for the merged/converted SBOM (e.g., 'sbom.cdx.json').")
 
 	// Tools to choose from
