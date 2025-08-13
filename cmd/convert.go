@@ -137,7 +137,7 @@ func init() {
 	convertCmd.Flags().StringVarP(&outputFilePath, "output", "o", "output-sbom", "Output file path for the merged/converted SBOM (e.g., 'sbom.cdx.json').")
 
 	// Tools to choose from
-	convertCmd.Flags().StringVarP(&mergeToolChoice, "merge-tool", "mt", "native", "Tool to use for merging SBOMs ('native','cyclonedx-cli','hoppr')")
+	convertCmd.Flags().StringVar(&mergeToolChoice, "merge-tool", "native", "Tool to use for merging SBOMs ('native','cyclonedx-cli','hoppr')")
 
 	// Mandatory Flags
 	// convertCmd.MarkFlagRequired("format")
