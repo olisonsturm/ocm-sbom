@@ -32,6 +32,7 @@ type SBOM struct {
 // Deprecated: generateSBOMWithSyft is deprecated.
 // Use NewScanner or NewScannerWithDefaults from converter/syft_scan.go and call Scan() or ScanToWriter() instead.
 func (c *CLIConverter) generateSBOMWithSyft(imageRef string, outputFormat string) (string, error) {
+	panic("generateSBOMWithSyft is deprecated. Use NewScanner or NewScannerWithDefaults from converter/syft_scan.go and call Scan() or ScanToWriter() instead.")
 	if c.SyftCLIPath == "" {
 		return "", fmt.Errorf("Syft CLI Pfad nicht gesetzt oder gefunden")
 	}

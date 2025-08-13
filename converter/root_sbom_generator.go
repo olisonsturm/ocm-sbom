@@ -52,7 +52,9 @@ func NewRootSBOMGenerator(cliConverter *CLIConverter) *RootSBOMGenerator {
 }
 
 // GenerateRootSBOM creates a root SBOM for the OCM component that references all resource SBOMs
+// Deprecated: This function is deprecated and will be removed in future versions.
 func (g *RootSBOMGenerator) GenerateRootSBOM(descriptor *runtime.Descriptor, resourceSBOMPaths []string, individualSBOMsDir string) (string, error) {
+	panic("GenerateRootSBOM is deprecated and will be removed in future versions.")
 	log.Printf("Generating root SBOM for component: %s:%s", descriptor.Component.Name, descriptor.Component.Version)
 
 	// Extract bom-ref values from all resource SBOMs
@@ -64,7 +66,7 @@ func (g *RootSBOMGenerator) GenerateRootSBOM(descriptor *runtime.Descriptor, res
 	// Generate the root SBOM
 	rootSBOM := g.createRootSBOM(descriptor, resourceComponents, resourceBomRefs)
 
-	// Save the root SBOM to the individualSBOMsDir instead of general temp directory
+	// Save the root SBOM to the individualSBOMsDir instead of the general temp directory
 	rootSBOMPath := filepath.Join(individualSBOMsDir, fmt.Sprintf("root_ocm_meta_%s.json",
 		sanitizeFilename(descriptor.Component.Name)))
 
@@ -82,6 +84,7 @@ func (g *RootSBOMGenerator) GenerateRootSBOM(descriptor *runtime.Descriptor, res
 }
 
 // extractResourceBomRefs reads each resource SBOM and extracts the bom-ref from metadata.component
+// Deprecated: This function is deprecated and will be removed in future versions.
 func (g *RootSBOMGenerator) extractResourceBomRefs(sbomPaths []string) ([]string, []CycloneDXComponent, error) {
 	var bomRefs []string
 	var components []CycloneDXComponent
@@ -114,6 +117,7 @@ func (g *RootSBOMGenerator) extractResourceBomRefs(sbomPaths []string) ([]string
 }
 
 // createRootSBOM creates the root SBOM structure
+// Deprecated: This function is deprecated and will be removed in future versions.
 func (g *RootSBOMGenerator) createRootSBOM(descriptor *runtime.Descriptor, resourceComponents []CycloneDXComponent, resourceBomRefs []string) *CycloneDXBOM {
 	// Generate UUID for serial number
 	serialUUID, _ := uuid.NewRandom()

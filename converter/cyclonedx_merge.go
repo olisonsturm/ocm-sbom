@@ -8,8 +8,8 @@ import (
 	"github.com/CycloneDX/cyclonedx-go"
 )
 
-// MergeOptions holds the parameters for the Merge function.
-type MergeOptions struct {
+// CycloneDxMergeOptions holds the parameters for the ComponentSbomMerge function.
+type CycloneDxMergeOptions struct {
 	BOMs    []cyclonedx.BOM
 	Group   string
 	Name    string
@@ -20,7 +20,7 @@ type MergeOptions struct {
 var ErrMissingMetadataComponent = errors.New("required metadata (top level) component is missing from BOM")
 
 // CycloneDXMerge orchestrates the hierarchical merging of BOMs based on the provided options.
-func CycloneDXMerge(options MergeOptions) (*cyclonedx.BOM, error) {
+func CycloneDXMerge(options CycloneDxMergeOptions) (*cyclonedx.BOM, error) {
 	// Hierarchical merge requires a name and version for the top-level component.
 	if options.Name == "" || options.Version == "" {
 		return nil, errors.New("name and version must be specified for a hierarchical merge")
@@ -103,7 +103,7 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 			return nil, fmt.Errorf("%w (BOM: %s)", ErrMissingMetadataComponent, serialNumber)
 		}
 
-		// Merge metadata tools - only if tools exist and result metadata is not nil
+		// ComponentSbomMerge metadata tools - only if tools exist and result metadata is not nil
 		if result.Metadata != nil && bom.Metadata.Tools != nil {
 			// Handle Tools list (legacy)
 			if bom.Metadata.Tools.Components != nil && len(*bom.Metadata.Tools.Components) > 0 {
@@ -161,7 +161,7 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 
 		*result.Components = append(*result.Components, *thisComponent)
 
-		// Merge services
+		// ComponentSbomMerge services
 		if bom.Services != nil {
 			for _, service := range *bom.Services {
 				service.BOMRef = namespacedBOMRef(bom.Metadata.Component, service.BOMRef)
@@ -169,24 +169,24 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 			}
 		}
 
-		// Merge external references
+		// ComponentSbomMerge external references
 		if bom.ExternalReferences != nil {
 			*result.ExternalReferences = append(*result.ExternalReferences, *bom.ExternalReferences...)
 		}
 
-		// Merge dependencies
+		// ComponentSbomMerge dependencies
 		if bom.Dependencies != nil {
 			namespaceDependencyBOMRefs(componentBOMRefNamespace(thisComponent), *bom.Dependencies)
 			*result.Dependencies = append(*result.Dependencies, *bom.Dependencies...)
 		}
 
-		// Merge compositions
+		// ComponentSbomMerge compositions
 		if bom.Compositions != nil {
 			namespaceCompositions(componentBOMRefNamespace(bom.Metadata.Component), *bom.Compositions)
 			*result.Compositions = append(*result.Compositions, *bom.Compositions...)
 		}
 
-		// Merge vulnerabilities - NOTE: uses result.Metadata.Component namespace, not thisComponent!
+		// ComponentSbomMerge vulnerabilities - NOTE: uses result.Metadata.Component namespace, not thisComponent!
 		if bom.Vulnerabilities != nil {
 			var namespaceForVulns string
 			if result.Metadata != nil && result.Metadata.Component != nil {
@@ -206,7 +206,7 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 			namespaceProperty(componentBOMRefNamespace(thisComponent), refs, propertyName)
 		}
 
-		// Merge definitions
+		// ComponentSbomMerge definitions
 		if bom.Definitions != nil && bom.Definitions.Standards != nil {
 			// Namespace all references
 			namespaceBOMRefs(*bom.Definitions.Standards)
@@ -223,7 +223,7 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 			*result.Definitions.Standards = append(*result.Definitions.Standards, *bom.Definitions.Standards...)
 		}
 
-		// Merge declarations
+		// ComponentSbomMerge declarations
 		if bom.Declarations != nil {
 			// Assessors
 			if bom.Declarations.Assessors != nil {

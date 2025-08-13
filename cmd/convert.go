@@ -28,8 +28,8 @@ var convertCmd = &cobra.Command{
 processes it to generate a merged SBOM, and can convert it to desired formats.
 
 Example:
-  ocm convert ./ctf//github.com/olison/parent --format cyclonedx-json --output my-app.cdx.json
-  ocm convert ./ctf//github.com/olison/parent -f spdx-json -o my-app.spdx.json`,
+  ocm convert ./ctf//github.com/olison/parent --format cyclonedx-json --output test.cdx.json
+  ocm convert ./ctf//github.com/olison/parent -f spdx-json -o test.spdx.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("exactly one argument is required in the format [CTF_PATH]//[COMPONENT_NAME]")
@@ -84,7 +84,7 @@ Example:
 		log.Printf("Processing OCM component: %s from CTF: %s\n", componentName, ctfPath)
 		log.Printf("Target formats: %v\n", parsedFormats)
 		log.Printf("Output path: %s\n", outputFilePath)
-		log.Printf("Merge tool: %s", mergeToolChoice)
+		log.Printf("ComponentSbomMerge tool: %s", mergeToolChoice)
 
 		// convert
 		for _, format := range parsedFormats {
