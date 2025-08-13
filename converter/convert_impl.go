@@ -20,34 +20,33 @@ func (c *CLIConverter) ConvertOCMToSBOM(cftPath string, componentName string, ta
 		return nil, fmt.Errorf("error creating repository: %w", err)
 	}
 
-	// Step 1: process all components recursively starting at the given component (use version 1.0.0 for now)
+	// Process all components recursively starting at the given component (use version 1.0.0 for now) TODO: support version selection
 	allComponentSBOMPaths, err := c.processAllComponents(repo, componentName, "1.0.0", targetFormat)
 	if err != nil {
 		return nil, fmt.Errorf("error processing components: %w", err)
 	}
-
 	if len(allComponentSBOMPaths) == 0 {
 		log.Println("No SBOMs were generated for any components. Result will be empty.")
 		return []byte{}, nil
 	}
 
-	// Step 2: merge per-component SBOMs into final SBOM if there are multiple
-	finalMergedSBOMPath := ""
+	// Merge per-component SBOMs into final SBOM if there are multiple
+	rootComponentSbomPath := ""
 	if len(allComponentSBOMPaths) > 1 {
-		log.Printf("Merging %d component SBOMs into final SBOM", len(allComponentSBOMPaths))
-		merger := NewMerger(c)
+		log.Printf("Merging %d component SBOMs into final SBOM", len(allComponentSBOMPaths)-1)
+		merger := NewComponentSbomMerger(c)
 		// For a final merge of multiple components, use a generic name
-		finalMergedSBOMPath, err = merger.ComponentSbomMerge(c.TempDir, allComponentSBOMPaths, mergeTool, "final-merged-components", "1.0.0")
+		rootComponentSbomPath, err = merger.ComponentSbomMerge(c.TempDir, allComponentSBOMPaths, mergeTool, "final-merged-components", "1.0.0")
 		if err != nil {
 			return nil, fmt.Errorf("error during final merge: %w", err)
 		}
 	} else {
-		finalMergedSBOMPath = allComponentSBOMPaths[0]
+		rootComponentSbomPath = allComponentSBOMPaths[0]
 	}
-	log.Printf("Final merged SBOM at: %s", finalMergedSBOMPath)
+	log.Printf("Final merged SBOM at: %s", rootComponentSbomPath)
 
 	// Step 3: optionally convert to the desired output format
-	return c.convertFinalSBOM(finalMergedSBOMPath, targetFormat)
+	return c.convertFinalSBOM(rootComponentSbomPath, targetFormat)
 }
 
 // processAllComponents traverses the component hierarchy and generates a merged SBOM for each component.

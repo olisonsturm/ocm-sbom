@@ -1,16 +1,18 @@
 package converter
 
 import (
+	"fmt"
 	"io"
+	"os"
 
 	"github.com/CycloneDX/cyclonedx-go"
 )
 
 // CycloneDXProcessor abstracts parsing, editing, and writing CycloneDX SBOMs.
 type CycloneDXProcessor interface {
-	Parse(r io.ReadSeeker) (*cyclonedx.BOM, error)
+	Parse(path string) (*cyclonedx.BOM, error)
 	Edit(b *cyclonedx.BOM, opts CycloneDXProcessorOptions) error
-	Write(b *cyclonedx.BOM, w io.Writer, format cyclonedx.BOMFileFormat) error
+	Write(b *cyclonedx.BOM, path string, format cyclonedx.BOMFileFormat) error
 }
 
 // CycloneDXProcessorOptions contains minimal fields used to edit the SBOMs root component.
@@ -28,16 +30,27 @@ func NewCycloneDXProcessor() CycloneDXProcessor {
 }
 
 // Parse reads a BOM from r, auto-detecting JSON or XML.
-func (p *cyclonedxProcessorImpl) Parse(r io.ReadSeeker) (*cyclonedx.BOM, error) {
-	format := sniffCycloneDXFormat(r)
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return nil, err
+func (p *cyclonedxProcessorImpl) Parse(path string) (*cyclonedx.BOM, error) {
+
+	sbomFile, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open sbom file %s: %w", path, err)
 	}
-	dec := cyclonedx.NewBOMDecoder(r, format)
-	var bom cyclonedx.BOM
-	if err := dec.Decode(&bom); err != nil && err != io.EOF {
-		return nil, err
+	bom := cyclonedx.BOM{}
+	decoder := cyclonedx.NewBOMDecoder(sbomFile, cyclonedx.BOMFileFormatJSON)
+	if err = decoder.Decode(&bom); err != nil && err != io.EOF {
+		return nil, fmt.Errorf("failed to decode sbom file %s: %w", path, err)
 	}
+
+	//format := sniffCycloneDXFormat(r)
+	//if _, err := r.Seek(0, io.SeekStart); err != nil {
+	//	return nil, err
+	//}
+	//dec := cyclonedx.NewBOMDecoder(r, format)
+	//var bom cyclonedx.BOM
+	//if err := dec.Decode(&bom); err != nil && err != io.EOF {
+	//	return nil, err
+	//}
 	return &bom, nil
 }
 
@@ -73,10 +86,15 @@ func (p *cyclonedxProcessorImpl) Edit(b *cyclonedx.BOM, opts CycloneDXProcessorO
 }
 
 // Write serializes the BOM to w in the given format.
-func (p *cyclonedxProcessorImpl) Write(b *cyclonedx.BOM, w io.Writer, format cyclonedx.BOMFileFormat) error {
-	enc := cyclonedx.NewBOMEncoder(w, format)
-	enc.SetPretty(true)
-	return enc.Encode(b)
+func (p *cyclonedxProcessorImpl) Write(bom *cyclonedx.BOM, path string, format cyclonedx.BOMFileFormat) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create sbom file %s: %w", path, err)
+	}
+	defer file.Close()
+	encoder := cyclonedx.NewBOMEncoder(file, format)
+	encoder.SetPretty(true)
+	return encoder.Encode(bom)
 }
 
 // sniffCycloneDXFormat peeks at the first non-whitespace byte to guess JSON vs. XML.

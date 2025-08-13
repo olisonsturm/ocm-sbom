@@ -45,7 +45,7 @@ func CycloneDXMerge(options CycloneDxMergeOptions) (*cyclonedx.BOM, error) {
 	if outputBom.Metadata == nil {
 		outputBom.Metadata = &cyclonedx.Metadata{}
 	}
-	// The SerialNumber and Timestamp are typically set upon final generation.
+	// The SerialNumber and Timestamp are typically set upon the final generation.
 
 	return outputBom, nil
 }

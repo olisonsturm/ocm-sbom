@@ -17,8 +17,8 @@ type ComponentSbomMerger struct {
 	cliConverter *CLIConverter
 }
 
-// NewMerger creates a new ComponentSbomMerger.
-func NewMerger(cliConverter *CLIConverter) *ComponentSbomMerger {
+// NewComponentSbomMerger creates a new ComponentSbomMerger.
+func NewComponentSbomMerger(cliConverter *CLIConverter) *ComponentSbomMerger {
 	return &ComponentSbomMerger{cliConverter: cliConverter}
 }
 

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/anchore/clio"
 	"ocm.software/open-component-model/bindings/go/descriptor/runtime"
 )
@@ -50,13 +51,33 @@ func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor, ou
 	}
 
 	// ComponentSbomMerge the SBOMs using the ComponentSbomMerger, saving in the same componentResourceSbomDir
-	merger := NewMerger(p.cliConverter)
+	merger := NewComponentSbomMerger(p.cliConverter)
 	mergedSBOMPath, err := merger.ComponentSbomMerge(componentResourceSbomDir, componentResourceSbomFullPaths, "cyclonedx-cli", descriptor.Component.Name, descriptor.Component.Version)
 	if err != nil {
 		return "", fmt.Errorf("failed to merge SBOMs for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
 	}
 
-	// TODO: use cyclonedx_processor.go to generate the final SBOM with appending component metadata
+	// Create a CycloneDX processor
+	processor := NewCycloneDXProcessor()
+
+	// Read and decode the merged input SBOM file
+	sbom, _ := processor.Parse(mergedSBOMPath)
+
+	// Edit the SBOM metadata
+	editOptions := CycloneDXProcessorOptions{
+		Name:       descriptor.Component.Name,
+		Version:    descriptor.Component.Version,
+		Properties: make([]cyclonedx.Property, 0),
+	}
+	if err := processor.Edit(sbom, editOptions); err != nil {
+		return "", fmt.Errorf("failed to edit SBOM metadata for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
+	}
+
+	// Overwrite the merged SBOM file with the edited SBOM
+	err = processor.Write(sbom, mergedSBOMPath, cyclonedx.BOMFileFormatJSON)
+	if err != nil {
+		return "", fmt.Errorf("failed to write edited SBOM for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
+	}
 
 	return mergedSBOMPath, nil
 }
