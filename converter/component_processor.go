@@ -25,7 +25,7 @@ func NewComponentProcessor(cliConverter *CLIConverter) *ComponentProcessor {
 
 // ProcessComponent generates and merges SBOMs for a given component version.
 // It returns the path to the merged SBOM (CycloneDX JSON).
-func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor, outputFormat SBOMFormat) (string, error) {
+func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor, outputFormat SBOMFormat, mergeTool string) (string, error) {
 	log.Printf("Processing component: %s:%s", descriptor.Component.Name, descriptor.Component.Version)
 
 	// temporary directory for individual SBOMs for this component
@@ -52,7 +52,7 @@ func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor, ou
 
 	// ComponentSbomMerge the SBOMs using the ComponentSbomMerger, saving in the same componentResourceSbomDir
 	merger := NewComponentSbomMerger(p.cliConverter)
-	mergedSBOMPath, err := merger.ComponentSbomMerge(componentResourceSbomDir, componentResourceSbomFullPaths, "cyclonedx-cli", descriptor.Component.Name, descriptor.Component.Version)
+	mergedSBOMPath, err := merger.ComponentSbomMerge(componentResourceSbomDir, componentResourceSbomFullPaths, mergeTool, descriptor.Component.Name, descriptor.Component.Version)
 	if err != nil {
 		return "", fmt.Errorf("failed to merge SBOMs for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
 	}
@@ -61,7 +61,11 @@ func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor, ou
 	processor := NewCycloneDXProcessor()
 
 	// Read and decode the merged input SBOM file
-	sbom, _ := processor.Parse(mergedSBOMPath)
+	sbom, err := processor.Parse(mergedSBOMPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse merged SBOM %s for component %s/%s: %w",
+			mergedSBOMPath, descriptor.Component.Name, descriptor.Component.Version, err)
+	}
 
 	// Edit the SBOM metadata
 	editOptions := CycloneDXProcessorOptions{
@@ -70,13 +74,14 @@ func (p *ComponentProcessor) ProcessComponent(descriptor *runtime.Descriptor, ou
 		Properties: make([]cyclonedx.Property, 0),
 	}
 	if err := processor.Edit(sbom, editOptions); err != nil {
-		return "", fmt.Errorf("failed to edit SBOM metadata for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
+		return "", fmt.Errorf("failed to edit SBOM metadata for component %s/%s: %w",
+			descriptor.Component.Name, descriptor.Component.Version, err)
 	}
 
 	// Overwrite the merged SBOM file with the edited SBOM
-	err = processor.Write(sbom, mergedSBOMPath, cyclonedx.BOMFileFormatJSON)
-	if err != nil {
-		return "", fmt.Errorf("failed to write edited SBOM for component %s/%s: %w", descriptor.Component.Name, descriptor.Component.Version, err)
+	if err := processor.Write(sbom, mergedSBOMPath, 0); err != nil {
+		return "", fmt.Errorf("failed to write edited SBOM for component %s/%s: %w",
+			descriptor.Component.Name, descriptor.Component.Version, err)
 	}
 
 	return mergedSBOMPath, nil

@@ -6,46 +6,67 @@ import (
 	"reflect"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/google/uuid"
+)
+
+// CycloneDxMergeMode defines the merge strategy.
+type CycloneDxMergeMode string
+
+const (
+	MergeModeHierarchical CycloneDxMergeMode = "hierarchical"
+	MergeModeFlat         CycloneDxMergeMode = "flat"
 )
 
 // CycloneDxMergeOptions holds the parameters for the ComponentSbomMerge function.
 type CycloneDxMergeOptions struct {
-	BOMs    []cyclonedx.BOM
-	Group   string
-	Name    string
-	Version string
+	BOMs      []cyclonedx.BOM
+	Group     string
+	Name      string
+	Version   string
+	MergeMode CycloneDxMergeMode
 }
 
 // ErrMissingMetadataComponent indicates that a BOM is missing its required metadata component
 var ErrMissingMetadataComponent = errors.New("required metadata (top level) component is missing from BOM")
 
-// CycloneDXMerge orchestrates the hierarchical merging of BOMs based on the provided options.
+// CycloneDXMerge orchestrates the merging of BOMs based on the provided options.
 func CycloneDXMerge(options CycloneDxMergeOptions) (*cyclonedx.BOM, error) {
 	// Hierarchical merge requires a name and version for the top-level component.
-	if options.Name == "" || options.Version == "" {
+	if options.MergeMode == MergeModeHierarchical && (options.Name == "" || options.Version == "") {
 		return nil, errors.New("name and version must be specified for a hierarchical merge")
 	}
 
-	// Create the top-level component (bomSubject) for the merged BOM.
-	bomSubject := &cyclonedx.Component{
-		Type:    cyclonedx.ComponentTypeApplication,
-		Group:   options.Group,
-		Name:    options.Name,
-		Version: options.Version,
+	var outputBom *cyclonedx.BOM
+	var err error
+
+	if options.MergeMode == MergeModeHierarchical {
+		bomSubject := &cyclonedx.Component{
+			Type:    cyclonedx.ComponentTypeApplication,
+			Group:   options.Group,
+			Name:    options.Name,
+			Version: options.Version,
+		}
+		outputBom, err = HierarchicalMerge(options.BOMs, bomSubject)
+	} else if options.MergeMode == MergeModeFlat {
+		outputBom, err = FlatMerge(options.BOMs, nil)
+	} else {
+		return nil, fmt.Errorf("unsupported merge mode: %s", options.MergeMode)
 	}
 
-	// Perform the hierarchical merge.
-	outputBom, err := HierarchicalMerge(options.BOMs, bomSubject)
 	if err != nil {
-		return nil, fmt.Errorf("hierarchical merge failed: %w", err)
+		return nil, fmt.Errorf("merge failed: %w", err)
 	}
 
 	// Finalize BOM metadata.
-	outputBom.Version = 1
-	if outputBom.Metadata == nil {
-		outputBom.Metadata = &cyclonedx.Metadata{}
+	if outputBom != nil {
+		outputBom.Version = 1
+		if outputBom.Metadata == nil {
+			outputBom.Metadata = &cyclonedx.Metadata{}
+		}
+
+		// Set a new UUID serial number for the output BOM
+		outputBom.SerialNumber = fmt.Sprintf("urn:uuid:%s", uuid.New().String())
 	}
-	// The SerialNumber and Timestamp are typically set upon the final generation.
 
 	return outputBom, nil
 }
@@ -105,14 +126,6 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 
 		// ComponentSbomMerge metadata tools - only if tools exist and result metadata is not nil
 		if result.Metadata != nil && bom.Metadata.Tools != nil {
-			// Handle Tools list (legacy)
-			if bom.Metadata.Tools.Components != nil && len(*bom.Metadata.Tools.Components) > 0 {
-				if result.Metadata.Tools.Components == nil {
-					result.Metadata.Tools.Components = &[]cyclonedx.Component{}
-				}
-				*result.Metadata.Tools.Components = append(*result.Metadata.Tools.Components, *bom.Metadata.Tools.Components...)
-			}
-
 			// Handle Tools Components
 			if bom.Metadata.Tools.Components != nil && len(*bom.Metadata.Tools.Components) > 0 {
 				if result.Metadata.Tools.Components == nil {
@@ -303,6 +316,81 @@ func HierarchicalMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*
 	if result.Metadata != nil && result.Metadata.Tools != nil && result.Metadata.Tools.Components != nil && len(*result.Metadata.Tools.Components) == 0 {
 		result.Metadata.Tools.Components = nil
 	}
+	if len(*result.Components) == 0 {
+		result.Components = nil
+	}
+	if len(*result.Services) == 0 {
+		result.Services = nil
+	}
+	if len(*result.ExternalReferences) == 0 {
+		result.ExternalReferences = nil
+	}
+	if len(*result.Dependencies) == 0 {
+		result.Dependencies = nil
+	}
+	if len(*result.Compositions) == 0 {
+		result.Compositions = nil
+	}
+	if len(*result.Vulnerabilities) == 0 {
+		result.Vulnerabilities = nil
+	}
+
+	return result, nil
+}
+
+// FlatMerge performs a flat merge of multiple BOMs, without a hierarchical structure.
+func FlatMerge(boms []cyclonedx.BOM, bomSubject *cyclonedx.Component) (*cyclonedx.BOM, error) {
+	result := &cyclonedx.BOM{}
+
+	// Initialize lists
+	result.Components = &[]cyclonedx.Component{}
+	result.Services = &[]cyclonedx.Service{}
+	result.ExternalReferences = &[]cyclonedx.ExternalReference{}
+	result.Dependencies = &[]cyclonedx.Dependency{}
+	result.Compositions = &[]cyclonedx.Composition{}
+	result.Vulnerabilities = &[]cyclonedx.Vulnerability{}
+
+	for _, bom := range boms {
+		// Merge components
+		if bom.Components != nil {
+			for _, comp := range *bom.Components {
+				if !containsComponent(*result.Components, comp) {
+					*result.Components = append(*result.Components, comp)
+				}
+			}
+		}
+
+		// Merge services
+		if bom.Services != nil {
+			for _, service := range *bom.Services {
+				if !containsService(*result.Services, service) {
+					*result.Services = append(*result.Services, service)
+				}
+			}
+		}
+
+		// Merge external references
+		if bom.ExternalReferences != nil {
+			*result.ExternalReferences = append(*result.ExternalReferences, *bom.ExternalReferences...)
+		}
+
+		// Merge dependencies
+		if bom.Dependencies != nil {
+			*result.Dependencies = append(*result.Dependencies, *bom.Dependencies...)
+		}
+
+		// Merge compositions
+		if bom.Compositions != nil {
+			*result.Compositions = append(*result.Compositions, *bom.Compositions...)
+		}
+
+		// Merge vulnerabilities
+		if bom.Vulnerabilities != nil {
+			*result.Vulnerabilities = append(*result.Vulnerabilities, *bom.Vulnerabilities...)
+		}
+	}
+
+	// Cleanup empty top level elements
 	if len(*result.Components) == 0 {
 		result.Components = nil
 	}

@@ -1,7 +1,6 @@
 package converter
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -49,30 +48,60 @@ func (m *ComponentSbomMerger) ComponentSbomMerge(componentResourceSbomDir string
 			bom := cyclonedx.BOM{}
 			decoder := cyclonedx.NewBOMDecoder(file, cyclonedx.BOMFileFormatJSON)
 			if err = decoder.Decode(&bom); err != nil && err != io.EOF {
+				file.Close()
 				return "", fmt.Errorf("failed to decode sbom file %s: %w", path, err)
 			}
+			file.Close()
+
+			// Validate BOM has required metadata
+			if bom.Metadata == nil || bom.Metadata.Component == nil {
+				return "", fmt.Errorf("invalid BOM in file %s: missing metadata component", path)
+			}
+
 			boms = append(boms, bom)
 		}
-		// Prepare options and call the native ComponentSbomMerge function
+
+		// Prepare options and call the native merge function
 		opts := CycloneDxMergeOptions{
-			BOMs:    boms,
-			Name:    componentName,
-			Version: componentVersion,
-			Group:   "",
+			BOMs:      boms,
+			Name:      componentName,
+			Version:   componentVersion,
+			Group:     "",
+			MergeMode: MergeModeHierarchical,
 		}
 
 		mergedBom, err := CycloneDXMerge(opts)
 		if err != nil {
 			return "", fmt.Errorf("native merge failed: %w", err)
 		}
-		// Encode the resulting BOM to the output file
+
+		// Set proper BOM specification version and format
+		mergedBom.BOMFormat = "CycloneDX"
+		mergedBom.SpecVersion = cyclonedx.SpecVersion1_6
+
+		// Validate merged BOM
+		if mergedBom.Metadata == nil || mergedBom.Metadata.Component == nil {
+			return "", fmt.Errorf("merged BOM is invalid: missing metadata component")
+		}
+
+		// Create output file and encode using CycloneDX encoder
 		outputFile, err := os.Create(mergedSbomPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to create merged sbom file: %w", err)
 		}
-		encoder := json.NewEncoder(outputFile)
-		encoder.SetIndent("", "  ") // for pretty printing
+
+		encoder := cyclonedx.NewBOMEncoder(outputFile, cyclonedx.BOMFileFormatJSON)
+		encoder.SetPretty(true)
 		mergeErr = encoder.Encode(mergedBom)
+
+		// Close and sync file
+		if closeErr := outputFile.Close(); closeErr != nil {
+			return "", fmt.Errorf("failed to close output file: %w", closeErr)
+		}
+
+		if mergeErr != nil {
+			return "", fmt.Errorf("failed to encode merged BOM: %w", mergeErr)
+		}
 	case "hoppr":
 		panic("hoppr merge not implemented yet")
 		if m.cliConverter.HopprCLIPath == "" {

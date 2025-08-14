@@ -21,7 +21,7 @@ func (c *CLIConverter) ConvertOCMToSBOM(cftPath string, componentName string, ta
 	}
 
 	// Process all components recursively starting at the given component (use version 1.0.0 for now) TODO: support version selection
-	allComponentSBOMPaths, err := c.processAllComponents(repo, componentName, "1.0.0", targetFormat)
+	allComponentSBOMPaths, err := c.processAllComponents(repo, componentName, "1.0.0", targetFormat, mergeTool)
 	if err != nil {
 		return nil, fmt.Errorf("error processing components: %w", err)
 	}
@@ -42,7 +42,7 @@ func (c *CLIConverter) ConvertOCMToSBOM(cftPath string, componentName string, ta
 // resources, then merges bottom-up so each parent includes its children. The returned slice's
 // first element is the root component's fully merged SBOM path.
 // go
-func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository, componentName, componentVersion string, outputFormat SBOMFormat) ([]string, error) {
+func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository, componentName, componentVersion string, outputFormat SBOMFormat, mergeTool string) ([]string, error) {
 	type void = struct{}
 
 	processor := NewComponentProcessor(c)
@@ -87,7 +87,7 @@ func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository,
 		}
 
 		// Generate and store resource-only SBOM for this component
-		mergedSBOMPath, err := processor.ProcessComponent(runtimeDesc, outputFormat)
+		mergedSBOMPath, err := processor.ProcessComponent(runtimeDesc, outputFormat, mergeTool)
 		if err != nil {
 			log.Printf("Warning: error processing component %s: %v", currID, err)
 			// Keep going; if no SBOM, children might still produce results
@@ -177,7 +177,7 @@ func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository,
 					compName = parts[0]
 				}
 
-				outPath, err := merger.ComponentSbomMerge(c.TempDir, files, "cyclonedx-cli", compName, compVersion)
+				outPath, err := merger.ComponentSbomMerge(c.TempDir, files, mergeTool, compName, compVersion)
 				if err != nil {
 					log.Printf("Warning: merge failed for %s, using first input: %v", nid, err)
 				} else {
@@ -218,7 +218,7 @@ func (c *CLIConverter) processAllComponents(repo oci.ComponentVersionRepository,
 }
 
 // processAllComponentsOld traverses the component hierarchy and generates a merged SBOM for each component.
-func (c *CLIConverter) processAllComponentsOld(repo oci.ComponentVersionRepository, componentName, componentVersion string, outputFormat SBOMFormat) ([]string, error) {
+func (c *CLIConverter) processAllComponentsOld(repo oci.ComponentVersionRepository, componentName, componentVersion string, outputFormat SBOMFormat, mergeTool string) ([]string, error) {
 	var allComponentSBOMPaths []string
 	processed := make(map[string]bool)
 	queue := []struct{ ComponentName, Version string }{{ComponentName: componentName, Version: componentVersion}}
@@ -243,7 +243,7 @@ func (c *CLIConverter) processAllComponentsOld(repo oci.ComponentVersionReposito
 		}
 
 		// Process the current component using the runtime descriptor
-		mergedSBOMPath, err := processor.ProcessComponent(runtimeDesc, outputFormat)
+		mergedSBOMPath, err := processor.ProcessComponent(runtimeDesc, outputFormat, mergeTool)
 		if err != nil {
 			log.Printf("Warning: error processing component %s: %v", id, err)
 		}
