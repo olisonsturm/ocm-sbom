@@ -8,6 +8,7 @@ import (
 )
 
 // rootCmd represents the base command when called without any subcommands
+// Test case: go run main.go convert ./example-ocm/ctf//github.com/olison/parent -f cyclonedx-json -o sbom.cdx.json --merge-tool native
 var rootCmd = &cobra.Command{
 	Use:   "ocm-sbom",
 	Short: "OCM SBOM CLI",

@@ -1,4 +1,3 @@
-// Package converter provides functionality to convert OCM component descriptors to various SBOM formats.
 package converter
 
 import (

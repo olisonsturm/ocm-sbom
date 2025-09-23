@@ -1,4 +1,3 @@
-// Package converter provides functionality to convert OCM component descriptors to various SBOM formats.
 package converter
 
 import (
@@ -27,9 +26,12 @@ type SBOM struct {
 	} `json:"metadata"`
 }
 
-// generateSBOMWithSyft ruft Syft auf, um ein SBOM für eine gegebene Image-Referenz zu generieren.
+// Ruft Syft auf, um ein SBOM für eine gegebene Image-Referenz zu generieren.
 // outputFormat sollte ein Syft-kompatibles Format sein (z.B. "cyclonedx-json", "spdx-json").
+// Deprecated: generateSBOMWithSyft is deprecated.
+// Use NewScanner or NewScannerWithDefaults from converter/syft_scan.go and call Scan() or ScanToWriter() instead.
 func (c *CLIConverter) generateSBOMWithSyft(imageRef string, outputFormat string) (string, error) {
+	panic("generateSBOMWithSyft is deprecated. Use NewScanner or NewScannerWithDefaults from converter/syft_scan.go and call Scan() or ScanToWriter() instead.")
 	if c.SyftCLIPath == "" {
 		return "", fmt.Errorf("Syft CLI Pfad nicht gesetzt oder gefunden")
 	}
@@ -48,19 +50,4 @@ func (c *CLIConverter) generateSBOMWithSyft(imageRef string, outputFormat string
 	}
 
 	return outBuf.String(), nil
-}
-
-func mapOCMTypeToCycloneDX(ocmType string) string {
-	switch ocmType {
-	case "ociImage":
-		return "container"
-	case "binary", "executable", "helmChart":
-		return "application"
-	case "git", "gitHub":
-		return "library"
-	case "file", "spdx", "cyclonedx":
-		return "file"
-	default:
-		return "application" // Fallback
-	}
 }
