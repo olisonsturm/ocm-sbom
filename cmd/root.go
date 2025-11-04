@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 Olison Sturm
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // Package cmd provides the command-line interface for converting OCM components to SBOMs.
 package cmd
 
