@@ -2,7 +2,7 @@
 
 ## About this project
 
-A CLI tool to convert a Software Bill of Delivery so basically Open Component Model (OCM) components to Software Bill of Materials (SBOM) formats like SPDX and CycloneDX. This tool is for the OCM ecosystem and is designed to help users generate SBOMs for their OCM components. This project is part of ongoing research and builds upon work conducted in the context of a bachelor thesis of @olisonsturm.
+A CLI tool to convert a Software Bill of Delivery so basically Open Component Model (OCM) components to Software Bill of Materials (SBOM) formats by now CycloneDX BOM. This tool is for the OCM ecosystem and is designed to help users generate SBOMs for their OCM components. This project is part of ongoing research and builds upon work conducted in the context of a bachelor thesis of @olisonsturm.
 
 Check out the [OCM Toolset](https://github.com/open-component-model/ocm) and the [OCM Specification](https://github.com/open-component-model/ocm-spec) for more information about the Open Component Model.
 
