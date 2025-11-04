@@ -1,4 +1,6 @@
-# Our new open source project
+# OCM → CycloneDX mapping CLI
+
+A Go/Cobra CLI for mapping OCM component descriptors to CycloneDX Software Bills of Materials.
 
 ## About this project
 
