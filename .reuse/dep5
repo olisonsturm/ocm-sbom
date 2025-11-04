@@ -1,0 +1,11 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: ocm-sbom
+Upstream-Contact: Olison  Sturm <github.com/olisonsturm>
+
+Files: **/*.go
+Copyright: 2025 Olison Sturm
+License: Apache-2.0
+
+Files: docs/thesis/thesis.pdf
+Copyright: 2025 Olison Sturm
+License: CC-BY-4.0
