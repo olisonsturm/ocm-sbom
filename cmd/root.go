@@ -13,12 +13,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "dev"
+
 // rootCmd represents the base command when called without any subcommands
 // Test case: go run main.go convert ./example-ocm/ctf//github.com/olison/parent -f cyclonedx-json -o sbom.cdx.json --merge-tool native
 var rootCmd = &cobra.Command{
-	Use:   "ocm-sbom",
-	Short: "OCM SBOM CLI",
-	Long:  `OCM SBOM CLI is a command-line tool for converting OCM components to various SBOM formats like CycloneDX and SPDX.`,
+	Use:     "ocm-sbom",
+	Short:   "OCM SBOM CLI",
+	Long:    `OCM SBOM CLI is a command-line tool for converting OCM components to various SBOM formats like CycloneDX and SPDX.`,
+	Version: version,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
