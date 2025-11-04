@@ -38,47 +38,47 @@ type CLIConverter struct {
 // It initializes the paths for the required CLI tools and creates a temporary directory for intermediate files.
 func NewCLIConverter(hopprPath, cyclonedxPath, protobomPath, syftPath, tempDir string) (*CLIConverter, error) {
 	var err error
-	if hopprPath == "" {
-		hopprPath, _ = exec.LookPath("hopctl")
-	}
-	if cyclonedxPath == "" {
-		cyclonedxPath, _ = exec.LookPath("cyclonedx")
-	}
-	if protobomPath == "" {
-		protobomPath, _ = exec.LookPath("sbom-convert")
-	}
-	if syftPath == "" { // NEU: Syft-Pfad suchen
-		syftPath, _ = exec.LookPath("syft")
-	}
+	// if hopprPath == "" {
+	// 	hopprPath, _ = exec.LookPath("hopctl")
+	// }
+	// if cyclonedxPath == "" {
+	// 	cyclonedxPath, _ = exec.LookPath("cyclonedx")
+	// }
+	// if protobomPath == "" {
+	// 	protobomPath, _ = exec.LookPath("sbom-convert")
+	// }
+	// if syftPath == "" { // NEU: Syft-Pfad suchen
+	// 	syftPath, _ = exec.LookPath("syft")
+	// }
 
-	if hopprPath == "" {
-		log.Println("Hoppr (hopctl) CLI not found.")
-		hopprPath, err = tryInstallCLI("hopctl")
-		if err != nil {
-			return nil, fmt.Errorf("failed to install hopctl: %w", err)
-		}
-	}
-	if cyclonedxPath == "" {
-		log.Println("CycloneDX CLI (cyclonedx) not found.")
-		cyclonedxPath, err = tryInstallCLI("cyclonedx")
-		if err != nil {
-			return nil, fmt.Errorf("failed to install cyclonedx CLI: %w", err)
-		}
-	}
-	if protobomPath == "" {
-		log.Println("Protobom CLI (sbom-convert) not found.")
-		protobomPath, err = tryInstallCLI("sbom-convert")
-		if err != nil {
-			return nil, fmt.Errorf("failed to install sbom-convert: %w", err)
-		}
-	}
-	if syftPath == "" { // NEU: Syft-Installation versuchen
-		log.Println("Syft CLI (syft) not found.")
-		syftPath, err = tryInstallCLI("syft")
-		if err != nil {
-			return nil, fmt.Errorf("failed to install syft: %w", err)
-		}
-	}
+	// if hopprPath == "" {
+	// 	log.Println("Hoppr (hopctl) CLI not found.")
+	// 	hopprPath, err = tryInstallCLI("hopctl")
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to install hopctl: %w", err)
+	// 	}
+	// }
+	// if cyclonedxPath == "" {
+	// 	log.Println("CycloneDX CLI (cyclonedx) not found.")
+	// 	cyclonedxPath, err = tryInstallCLI("cyclonedx")
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to install cyclonedx CLI: %w", err)
+	// 	}
+	// }
+	// if protobomPath == "" {
+	// 	log.Println("Protobom CLI (sbom-convert) not found.")
+	// 	protobomPath, err = tryInstallCLI("sbom-convert")
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to install sbom-convert: %w", err)
+	// 	}
+	// }
+	// if syftPath == "" { // NEU: Syft-Installation versuchen
+	// 	log.Println("Syft CLI (syft) not found.")
+	// 	syftPath, err = tryInstallCLI("syft")
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to install syft: %w", err)
+	// 	}
+	// }
 
 	if tempDir == "" {
 		tempDir, err = os.MkdirTemp("", "ocm-sbom-conv-*")

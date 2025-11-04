@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://ocm.software/schemas/configuration-schema.yaml
+components:
+  # Root-Komponente, verweist nur auf die beiden Unterkomponenten
+  - name: github.com/acme.org/app
+    version: 1.0.0
+    provider:
+      name: acme.org
+    componentReferences:
+      - name: backend
+        componentName: github.com/acme.org/app/backend
+        version: 1.0.0
+      - name: frontend
+        componentName: github.com/acme.org/app/frontend
+        version: 1.0.0
+
+  # Child A: zwei OCI-Images
+  - name: github.com/acme.org/app/backend
+    version: 1.0.0
+    provider:
+      name: acme.org
+    resources:
+      - name: api
+        type: ociImage
+        version: 1.0.0
+        access:
+          type: ociArtifact
+          imageReference: docker.io/library/alpine:3.19.1
+      - name: worker
+        type: ociImage
+        version: 1.0.0
+        access:
+          type: ociArtifact
+          imageReference: docker.io/library/busybox:1.36.1
+
+  # Child B: ein OCI-Image
+  - name: github.com/acme.org/app/frontend
+    version: 1.0.0
+    provider:
+      name: acme.org
+    resources:
+      - name: web
+        type: ociImage
+        version: 1.0.0
+        access:
+          type: ociArtifact
+          imageReference: docker.io/library/nginx:1.25
